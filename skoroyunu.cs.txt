@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Threading;
+
+class Program
+{
+    static int screenWidth = 40;
+    static int screenHeight = 20;
+static int playerX = 20;
+static int playerY = 19;
+static int score = 0;
+static bool isRunning = true;
+static string logFile = "game_log.txt";
+static List<int[]> objects = new List<int[]>();
+static Random rnd =   new Random();
+static void Main()
+    {
+        Console.CursorVisible = false;
+        Console.SetBufferSize(screenWidth,screenHeight+1);
+        Console.SetWindowSize(screenWidth,screenHeight+1);
+        File.WriteAllText(logFile,"----Oyun Basladi----\n");
+        while (isRunning)
+        {
+            if (Console.KeyAvailable)
+            {
+            var key = Console.ReadKey(true).Key;
+            HandleInput(key);
+            }
+            UpdateObjects();
+            CheckCollisions();
+                Draw();
+            if (score <= 15)
+            {
+                isRunning = false;
+                Log($"GAME_OVER ->Targetscore reached.Final Score:{score}");
+
+            }
+            Thread.Sleep(100);
+        }
+        Console.Clear();
+        Console.WriteLine($"Oyun bitti, toplam skor = {score}");
+        Console.ReadKey();
+    }
+    static void HandleInput(ConsoleKey key)
+    {
+        int oldX = playerX;
+        if(key ==ConsoleKey.LeftArrow && playerX>0) playerX--;
+        if(key==ConsoleKey.RightArrow && playerX< screenWidth-1)playerX++;
+        if(oldX!= playerX)
+        {
+            Log($"INPUT ->key={key} playerX={playerX} playerY= {playerY}");
+
+        }
+    }
+    static void UpdateObjects()
+    {
+        if (rnd.Next(0, 100) < 10)
+        {
+            int newX = rnd.Next(0,screenWidth);
+            objects.Add(new int[]{newX,0});
+            Log($"UPDATE -> itemSpawned x={newX} y=0");
+
+        }
+        for(int i =0;i< objects.Count; i++)
+        {
+        objects[i][1]++;
+        Log($"MOVE -> itemIndex={i} newX={objects[i][0]} newY{objects[i][1]}");
+        }
+        objects.RemoveAll(obj=>obj[1]>=screenHeight);
+    }
+    static void CheckCollisions(){
+        for(int i = objects.Count - 1; i >= 0; i--)
+        {
+            if(objects[i][0]==playerX && objects[i][1] == playerY)
+            {
+                score++;
+                Log($"COLLİSİON->score={score} atX={playerX} atY={playerY}");
+                objects.RemoveAt(i);
+            }
+        }
+    }
+    static void Draw()
+    {
+        Console.Clear();
+        Console.SetCursorPosition(0,0);
+        Console.SetCursorPosition(playerX, playerY);
+        Console.Write("@");
+        foreach(var obj in objects)
+        {
+            if (obj[1] < screenHeight)
+            {
+                 Console.SetCursorPosition(obj[0], obj[1]);
+                 Console.Write("*");
+            }
+        }
+    }
+    static void Log(string message)
+    {
+        string timestamp= DateTime.Now.ToString("HH:mm:ss.fff");
+        File.AppendAllText(logFile,$"[{timestamp}] {message}{Environment.NewLine}");
+    }
+}
